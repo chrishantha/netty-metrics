@@ -45,7 +45,7 @@ public class NettyHttpServerHandler extends AbstractNettyHttpServerHandler<Netty
 
     @Override
     protected Object sleepStart() {
-        return httpServer.getSleepTimer();
+        return httpServer.getSleepTimer().time();
     }
 
     @Override

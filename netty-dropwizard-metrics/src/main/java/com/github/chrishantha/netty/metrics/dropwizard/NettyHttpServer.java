@@ -66,6 +66,8 @@ public class NettyHttpServer extends AbstractNettyHttpServer {
         requestSizeHistogram = registry.histogram("request_size");
         responseSizeHistogram = registry.histogram("response_size");
 
+        //TODO: JVM Gauges?
+
         //expose prometheus metrics
         HttpServer server;
         try {

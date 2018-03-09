@@ -86,7 +86,7 @@ public abstract class AbstractNettyHttpServerHandler<T extends NettyHttpServer>
             boolean keepAlive = HttpUtil.isKeepAlive(msg);
 
             HttpMethod method = msg.method();
-            FullHttpResponse response = null;
+            FullHttpResponse response;
             if (HttpMethod.GET.equals(method)) {
                 response = new DefaultFullHttpResponse(HTTP_1_1, OK, Unpooled.wrappedBuffer(generatePayload()));
                 response.headers().set(HttpHeaderNames.CONTENT_TYPE, "application/json");
