@@ -57,11 +57,11 @@ public class NettyHttpServerHandler extends AbstractNettyHttpServerHandler<Netty
 
     @Override
     protected void requestSize(int size) {
-        httpServer.getRequestSizeHistogram().observe(size);
+        httpServer.getRequestSizeSummary().observe(size);
     }
 
     @Override
     protected void responseSize(int size) {
-        httpServer.getResponseSizeHistogram().observe(size);
+        httpServer.getResponseSizeSummary().observe(size);
     }
 }

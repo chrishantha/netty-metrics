@@ -43,8 +43,8 @@ public class NettyHttpServer extends AbstractNettyHttpServer {
     private Histogram requestLatencyHistogram;
     private Summary requestLatencySummary;
     private Summary sleepTimeSummary;
-    private Histogram requestSizeHistogram;
-    private Histogram responseSizeHistogram;
+    private Summary requestSizeSummary;
+    private Summary responseSizeSummary;
 
     @Override
     public void init(ServerArgs serverArgs) {
@@ -58,12 +58,24 @@ public class NettyHttpServer extends AbstractNettyHttpServer {
         requestLatencyHistogram = Histogram.build()
                 .name("requests_latency_seconds").help("Request latency in seconds.").register();
         requestLatencySummary = Summary.build()
+                .quantile(0.1, 0.05)
+                .quantile(0.5, 0.05)
+                .quantile(0.9, 0.01)
+                .quantile(0.99, 0.001)
                 .name("requests_latency").help("Request latency").register();
         sleepTimeSummary = Summary.build()
                 .name("sleep_time").help("Sleep time").register();
-        requestSizeHistogram = Histogram.build()
+        requestSizeSummary = Summary.build()
+                .quantile(0.1, 0.05)
+                .quantile(0.5, 0.05)
+                .quantile(0.9, 0.01)
+                .quantile(0.99, 0.001)
                 .name("request_size").help("Request size").register();
-        responseSizeHistogram = Histogram.build()
+        responseSizeSummary = Summary.build()
+                .quantile(0.1, 0.05)
+                .quantile(0.5, 0.05)
+                .quantile(0.9, 0.01)
+                .quantile(0.99, 0.001)
                 .name("response_size").help("Response size").register();
 
         HttpServer server;
@@ -105,11 +117,11 @@ public class NettyHttpServer extends AbstractNettyHttpServer {
         return sleepTimeSummary;
     }
 
-    public Histogram getRequestSizeHistogram() {
-        return requestSizeHistogram;
+    public Summary getRequestSizeSummary() {
+        return requestSizeSummary;
     }
 
-    public Histogram getResponseSizeHistogram() {
-        return responseSizeHistogram;
+    public Summary getResponseSizeSummary() {
+        return responseSizeSummary;
     }
 }
