@@ -25,6 +25,7 @@ import com.github.chrishantha.netty.metrics.base.args.ServerArgs;
 import com.sun.net.httpserver.HttpServer;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.dropwizard.DropwizardExports;
+import io.prometheus.client.exporter.HTTPServer;
 import io.prometheus.client.exporter.common.TextFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +42,6 @@ public class NettyHttpServer extends AbstractNettyHttpServer {
     private static final short OFFSET = 0;
 
     private static final MetricRegistry registry = new MetricRegistry();
-    private static final CollectorRegistry prometheusRegistry = new CollectorRegistry();
 
     private Counter totalRequestCounter;
     private Counter inprogressRequestsCounter;
@@ -56,7 +56,7 @@ public class NettyHttpServer extends AbstractNettyHttpServer {
         serverArgs.setPort(serverArgs.getPort() + OFFSET);
         serverArgs.setMetricsPort(serverArgs.getMetricsPort() + OFFSET);
 
-        new DropwizardExports(registry).register(prometheusRegistry);
+        new DropwizardExports(registry).register(CollectorRegistry.defaultRegistry);
 
         totalRequestCounter = registry.counter("requests_total");
         inprogressRequestsCounter = registry.counter("inprogress_requests");
@@ -68,24 +68,11 @@ public class NettyHttpServer extends AbstractNettyHttpServer {
 
         //TODO: JVM Gauges?
 
-        //expose prometheus metrics
-        HttpServer server;
         try {
-            server = HttpServer.create(new InetSocketAddress(serverArgs.getMetricsPort()), 0);
+            new HTTPServer(serverArgs.getMetricsPort(), true);
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }
-        server.createContext("/metrics", httpExchange -> {
-            logger.info("Request received for /metrics");
-            StringWriter respBodyWriter = new StringWriter();
-            TextFormat.write004(respBodyWriter, prometheusRegistry.metricFamilySamples());
-            byte[] respBody = respBodyWriter.toString().getBytes("UTF-8");
-            httpExchange.getResponseHeaders().put("Content-Type", Collections.singletonList("text/plain; charset=UTF-8"));
-            httpExchange.sendResponseHeaders(200, respBody.length);
-            httpExchange.getResponseBody().write(respBody);
-            httpExchange.getResponseBody().close();
-        });
-        server.start();
     }
 
     public Counter getTotalRequestCounter() {

@@ -17,20 +17,15 @@ package com.github.chrishantha.netty.metrics.prometheus;
 
 import com.github.chrishantha.netty.metrics.base.AbstractNettyHttpServer;
 import com.github.chrishantha.netty.metrics.base.args.ServerArgs;
-import com.sun.net.httpserver.HttpServer;
-import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
 import io.prometheus.client.Summary;
-import io.prometheus.client.exporter.common.TextFormat;
+import io.prometheus.client.exporter.HTTPServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.StringWriter;
-import java.net.InetSocketAddress;
-import java.util.Collections;
 
 public class NettyHttpServer extends AbstractNettyHttpServer {
 
@@ -56,13 +51,16 @@ public class NettyHttpServer extends AbstractNettyHttpServer {
         inprogressRequestsGauge = Gauge.build()
                 .name("inprogress_requests").help("Inprogress Requests").register();
         requestLatencyHistogram = Histogram.build()
+                .labelNames("method")
                 .name("requests_latency_seconds").help("Request latency in seconds.").register();
+        totalRequestCounter.labels("test").inc();
         requestLatencySummary = Summary.build()
                 .quantile(0.1, 0.05)
                 .quantile(0.5, 0.05)
                 .quantile(0.9, 0.01)
                 .quantile(0.99, 0.001)
                 .name("requests_latency").help("Request latency").register();
+        requestLatencySummary.labels("").get();
         sleepTimeSummary = Summary.build()
                 .name("sleep_time").help("Sleep time").register();
         requestSizeSummary = Summary.build()
@@ -78,23 +76,11 @@ public class NettyHttpServer extends AbstractNettyHttpServer {
                 .quantile(0.99, 0.001)
                 .name("response_size").help("Response size").register();
 
-        HttpServer server;
         try {
-            server = HttpServer.create(new InetSocketAddress(serverArgs.getMetricsPort()), 0);
+            new HTTPServer(serverArgs.getMetricsPort(), true);
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }
-        server.createContext("/metrics", httpExchange -> {
-            logger.info("Request received for /metrics");
-            StringWriter respBodyWriter = new StringWriter();
-            TextFormat.write004(respBodyWriter, CollectorRegistry.defaultRegistry.metricFamilySamples());
-            byte[] respBody = respBodyWriter.toString().getBytes("UTF-8");
-            httpExchange.getResponseHeaders().put("Content-Type", Collections.singletonList("text/plain; charset=UTF-8"));
-            httpExchange.sendResponseHeaders(200, respBody.length);
-            httpExchange.getResponseBody().write(respBody);
-            httpExchange.getResponseBody().close();
-        });
-        server.start();
     }
 
     public Counter getTotalRequestCounter() {
