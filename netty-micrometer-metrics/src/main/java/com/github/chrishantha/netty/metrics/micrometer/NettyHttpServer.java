@@ -20,7 +20,6 @@ import com.github.chrishantha.netty.metrics.base.args.ServerArgs;
 import com.sun.net.httpserver.HttpServer;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
-import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.prometheus.PrometheusConfig;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
@@ -41,7 +40,6 @@ public class NettyHttpServer extends AbstractNettyHttpServer {
     private static final PrometheusMeterRegistry registry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
 
     private Counter totalRequestCounter;
-    private Meter successRate;
     private Timer requestLatencyTimer;
     private Timer sleepTimer;
     private DistributionSummary requestSizeSummary;

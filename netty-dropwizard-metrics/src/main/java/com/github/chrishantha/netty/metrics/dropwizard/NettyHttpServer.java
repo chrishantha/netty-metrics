@@ -22,18 +22,13 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.github.chrishantha.netty.metrics.base.AbstractNettyHttpServer;
 import com.github.chrishantha.netty.metrics.base.args.ServerArgs;
-import com.sun.net.httpserver.HttpServer;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.dropwizard.DropwizardExports;
 import io.prometheus.client.exporter.HTTPServer;
-import io.prometheus.client.exporter.common.TextFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.StringWriter;
-import java.net.InetSocketAddress;
-import java.util.Collections;
 
 public class NettyHttpServer extends AbstractNettyHttpServer {
 

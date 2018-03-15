@@ -53,14 +53,12 @@ public class NettyHttpServer extends AbstractNettyHttpServer {
         requestLatencyHistogram = Histogram.build()
                 .labelNames("method")
                 .name("requests_latency_seconds").help("Request latency in seconds.").register();
-        totalRequestCounter.labels("test").inc();
         requestLatencySummary = Summary.build()
                 .quantile(0.1, 0.05)
                 .quantile(0.5, 0.05)
                 .quantile(0.9, 0.01)
                 .quantile(0.99, 0.001)
                 .name("requests_latency").help("Request latency").register();
-        requestLatencySummary.labels("").get();
         sleepTimeSummary = Summary.build()
                 .name("sleep_time").help("Sleep time").register();
         requestSizeSummary = Summary.build()
