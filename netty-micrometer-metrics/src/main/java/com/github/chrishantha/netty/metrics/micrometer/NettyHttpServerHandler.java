@@ -17,6 +17,8 @@ package com.github.chrishantha.netty.metrics.micrometer;
 
 import com.github.chrishantha.netty.metrics.base.AbstractNettyHttpServerHandler;
 import com.github.chrishantha.netty.metrics.base.args.HandlerArgs;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Metrics;
 
 import java.util.concurrent.TimeUnit;
 
@@ -31,13 +33,14 @@ public class NettyHttpServerHandler extends AbstractNettyHttpServerHandler<Netty
     }
 
     @Override
-    protected Object requestStart() {
+    protected Object requestStart(String method, String uri) {
+        Counter.builder("handler_total").register(Metrics.globalRegistry);
         httpServer.getTotalRequestCounter().increment();
         return System.nanoTime();
     }
 
     @Override
-    protected void requestEnd(Object object) {
+    protected void requestEnd(String method, String uri, int statusCode, Object object) {
         httpServer.getRequestLatencyTimer().record(System.nanoTime() - ((Long) object), TimeUnit.NANOSECONDS);
     }
 

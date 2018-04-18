@@ -30,14 +30,14 @@ public class NettyHttpServerHandler extends AbstractNettyHttpServerHandler<Netty
     }
 
     @Override
-    protected Object requestStart() {
+    protected Object requestStart(String method, String uri) {
         httpServer.getTotalRequestCounter().inc();
         httpServer.getInprogressRequestsCounter().inc();
         return httpServer.getRequestLatencyTimer().time();
     }
 
     @Override
-    protected void requestEnd(Object object) {
+    protected void requestEnd(String method, String uri, int statusCode, Object object) {
         httpServer.getInprogressRequestsCounter().dec();
         ((Timer.Context) object).stop();
         httpServer.getSuccessRate().mark();

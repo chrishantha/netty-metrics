@@ -131,6 +131,11 @@
                 <version>${prometheus.simple.client.version}</version>
             </dependency>
             <dependency>
+                <groupId>io.prometheus</groupId>
+                <artifactId>simpleclient_hotspot</artifactId>
+                <version>${prometheus.simple.client.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>io.micrometer</groupId>
                 <artifactId>micrometer-core</artifactId>
                 <version>${micrometer.version}</version>
@@ -156,6 +161,31 @@
                                 <goal>shade</goal>
                             </goals>
                             <configuration>
+                                <filters>
+                                    <filter>
+                                        <artifact>io.micrometer:micrometer-core</artifact>
+
+                                        <excludes>
+                                            <exclude>io/micrometer/core/aop/**</exclude>
+                                            <exclude>io/micrometer/core/annotation/**</exclude>
+                                            <!--<exclude>io/micrometer/core/instrument/binder/**</exclude>-->
+                                        </excludes>
+                                        <!--<includes>-->
+                                        <!--&lt;!&ndash;-->
+                                        <!--<include>io/micrometer/core/**</include>-->
+                                        <!--&ndash;&gt;-->
+                                        <!--<include>io/micrometer/core/instrument/binder/jvm/**</include>-->
+                                        <!--</includes>-->
+                                    </filter>
+                                    <filter>
+                                        <artifact>*:*</artifact>
+                                        <excludes>
+                                            <exclude>META-INF/*.SF</exclude>
+                                            <exclude>META-INF/*.DSA</exclude>
+                                            <exclude>META-INF/*.RSA</exclude>
+                                        </excludes>
+                                    </filter>
+                                </filters>
                                 <transformers>
                                     <transformer
                                             implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
@@ -194,9 +224,12 @@
                         <configuration>
                             <failOnWarning>true</failOnWarning>
                             <ignoredUnusedDeclaredDependencies>
-                                <ignoredUnusedDeclaredDependency>org.apache.logging.log4j:log4j-api</ignoredUnusedDeclaredDependency>
-                                <ignoredUnusedDeclaredDependency>org.apache.logging.log4j:log4j-core</ignoredUnusedDeclaredDependency>
-                                <ignoredUnusedDeclaredDependency>org.apache.logging.log4j:log4j-slf4j-impl</ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>org.apache.logging.log4j:log4j-api
+                                </ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>org.apache.logging.log4j:log4j-core
+                                </ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>org.apache.logging.log4j:log4j-slf4j-impl
+                                </ignoredUnusedDeclaredDependency>
                             </ignoredUnusedDeclaredDependencies>
                         </configuration>
                     </execution>
@@ -243,14 +276,14 @@
         <javac.target>1.8</javac.target>
         <netty.metrics.version>0.0.1-SNAPSHOT</netty.metrics.version>
         <jcommander.version>1.72</jcommander.version>
-        <netty.version>4.1.22.Final</netty.version>
+        <netty.version>4.1.23.Final</netty.version>
         <slf4j.version>1.7.25</slf4j.version>
-        <log4j.version>2.10.0</log4j.version>
+        <log4j.version>2.11.0</log4j.version>
         <dropwizard.metrics.version>4.0.2</dropwizard.metrics.version>
         <prometheus.simple.client.version>0.3.0</prometheus.simple.client.version>
-        <micrometer.version>1.0.1</micrometer.version>
+        <micrometer.version>1.0.3</micrometer.version>
         <maven.compiler.plugin.version>3.7.0</maven.compiler.plugin.version>
-        <maven.shade.plugin.version>3.1.0</maven.shade.plugin.version>
+        <maven.shade.plugin.version>3.1.1</maven.shade.plugin.version>
         <maven.dependency.plugin.version>3.0.2</maven.dependency.plugin.version>
         <apache.rat.plugin.version>0.12</apache.rat.plugin.version>
     </properties>

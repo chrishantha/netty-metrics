@@ -26,12 +26,12 @@ import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpMethod;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpUtil;
 
 import java.nio.charset.Charset;
 import java.util.Random;
 
-import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 /**
@@ -53,9 +53,9 @@ public abstract class AbstractNettyHttpServerHandler<T extends NettyHttpServer>
         ctx.flush();
     }
 
-    protected abstract Object requestStart();
+    protected abstract Object requestStart(String method, String uri);
 
-    protected abstract void requestEnd(Object object);
+    protected abstract void requestEnd(String method, String uri, int statusCode, Object object);
 
     protected abstract Object sleepStart();
 
@@ -67,7 +67,8 @@ public abstract class AbstractNettyHttpServerHandler<T extends NettyHttpServer>
 
     @Override
     protected final void channelRead0(ChannelHandlerContext ctx, FullHttpRequest msg) {
-        Object requestStart = requestStart();
+        Object requestStart = requestStart(msg.method().name(), msg.uri());
+        HttpResponseStatus status = HttpResponseStatus.OK;
         try {
             requestSize(msg.content().readableBytes());
             if (handlerArgs.getSleepTime() > 0) {
@@ -83,15 +84,23 @@ public abstract class AbstractNettyHttpServerHandler<T extends NettyHttpServer>
                 }
             }
 
+            if (handlerArgs.isRandomStatusCode()) {
+                int statusCode = 100 + random.nextInt(500);
+                status = HttpResponseStatus.valueOf(statusCode);
+                if (status == null) {
+                    status = new HttpResponseStatus(statusCode, "Random Status Code");
+                }
+            }
+
             boolean keepAlive = HttpUtil.isKeepAlive(msg);
 
             HttpMethod method = msg.method();
             FullHttpResponse response;
             if (HttpMethod.GET.equals(method)) {
-                response = new DefaultFullHttpResponse(HTTP_1_1, OK, Unpooled.wrappedBuffer(generatePayload()));
+                response = new DefaultFullHttpResponse(HTTP_1_1, status, Unpooled.wrappedBuffer(generatePayload()));
                 response.headers().set(HttpHeaderNames.CONTENT_TYPE, "application/json");
             } else {
-                response = new DefaultFullHttpResponse(HTTP_1_1, OK, msg.content().copy());
+                response = new DefaultFullHttpResponse(HTTP_1_1, status, msg.content().copy());
                 String contentType = msg.headers().get(HttpHeaderNames.CONTENT_TYPE);
                 if (contentType != null) {
                     response.headers().set(HttpHeaderNames.CONTENT_TYPE, contentType);
@@ -106,7 +115,7 @@ public abstract class AbstractNettyHttpServerHandler<T extends NettyHttpServer>
                 ctx.write(response);
             }
         } finally {
-            requestEnd(requestStart);
+            requestEnd(msg.method().name(), msg.uri(), status.code(), requestStart);
         }
     }
 

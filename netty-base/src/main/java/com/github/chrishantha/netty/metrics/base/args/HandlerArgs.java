@@ -33,6 +33,10 @@ public class HandlerArgs {
     @Parameter(names = "--payload-size", description = "Payload Size. Default 100KiB")
     private int payloadSize = 1024 * 100;
 
+    @Parameter(names = "--random-status-code",
+            description = "Return random HTTP status codes", arity = 0)
+    private boolean randomStatusCode = false;
+
     public boolean isRandomSleep() {
         return randomSleep;
     }
@@ -63,5 +67,13 @@ public class HandlerArgs {
 
     public void setPayloadSize(int payloadSize) {
         this.payloadSize = payloadSize;
+    }
+
+    public boolean isRandomStatusCode() {
+        return randomStatusCode;
+    }
+
+    public void setRandomStatusCode(boolean randomStatusCode) {
+        this.randomStatusCode = randomStatusCode;
     }
 }

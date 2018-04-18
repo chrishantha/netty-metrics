@@ -82,10 +82,12 @@ public abstract class AbstractNettyHttpServer implements NettyHttpServer {
     @Override
     public final void startServer(ServerArgs serverArgs, HandlerArgs handlerArgs) throws Exception {
         logger.info("Netty HTTP Server. Port: {}, Metrics Port: {}, Boss Threads: {}, Worker Threads: {}," +
-                        " SSL Enabled: {}, Sleep Time: {}ms, Random Sleep: {}, Payload Size: {}B, Random Payload: {}",
+                        " SSL Enabled: {}, Sleep Time: {}ms, Random Sleep: {}, Payload Size: {}B, Random Payload: {}" +
+                        " Random Status Codes: {}",
                 serverArgs.getPort(), serverArgs.getMetricsPort(), serverArgs.getBossThreads(),
                 serverArgs.getWorkerThreads(), serverArgs.isEnableSSL(), handlerArgs.getSleepTime(),
-                handlerArgs.isRandomSleep(), handlerArgs.getPayloadSize(), handlerArgs.isRandomPayload());
+                handlerArgs.isRandomSleep(), handlerArgs.getPayloadSize(), handlerArgs.isRandomPayload(),
+                handlerArgs.isRandomStatusCode());
         // Print Max Heap Size
         logger.info("Max Heap Size: {}MB", Runtime.getRuntime().maxMemory() / (1024 * 1024));
         // Print Netty Version
@@ -114,7 +116,8 @@ public abstract class AbstractNettyHttpServer implements NettyHttpServer {
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         public void initChannel(SocketChannel ch) {
-                            Iterator<NettyHttpServerHandler> handlerIterator = ServiceLoader.load(NettyHttpServerHandler.class).iterator();
+                            Iterator<NettyHttpServerHandler> handlerIterator = ServiceLoader.
+                                    load(NettyHttpServerHandler.class).iterator();
                             if (!handlerIterator.hasNext()) {
                                 throw new IllegalStateException("Could not load Netty HTTP Server Handler");
                             }

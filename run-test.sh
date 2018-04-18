@@ -1,8 +1,7 @@
 #!/bin/bash
 
 script_dir=$(dirname "$0")
-
-# rm $script_dir/*.log $script_dir/*.jtl
+#export JAVA_OPTS="-XX:+PreserveFramePointer -XX:InlineSmallCode=500"
 
 function netty_test() {
     jar_name="$1"
@@ -16,13 +15,13 @@ function netty_test() {
     fi
 
     echo "Starting ${jar_name}"
-    nohup java -Xms1g -Xmx1g -jar ${jar_name}.jar --sleep-time ${sleep_time} --random-sleep --random-payload > netty.out 2>&1 &
+    nohup java ${JAVA_OPTS} -Xms1g -Xmx1g -jar ${jar_name}.jar --sleep-time ${sleep_time} --random-sleep --random-payload | tee netty.out 2>&1 &
     cd ../../
-    jmeter -n -t loadtest.jmx -Jduration=300 -Jhost=localhost -Jport=${port} -l ${jar_name}.jtl
+    jmeter -n -t loadtest.jmx -Jduration=10 -Jhost=localhost -Jport=${port} -l ${jar_name}.jtl
     curl http://localhost:${metrics_port}/metrics | tee ${sleep_time}_${jar_name}.txt
 }
 
-sleep_times=(500 1000 2000)
+sleep_times=(10 500 1000 2000)
 
 for sleep_time in "${sleep_times[@]}"; do
     netty_test netty-dropwizard-metrics $sleep_time 8688 9797

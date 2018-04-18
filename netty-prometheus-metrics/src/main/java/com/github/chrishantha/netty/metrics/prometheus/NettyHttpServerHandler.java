@@ -31,18 +31,20 @@ public class NettyHttpServerHandler extends AbstractNettyHttpServerHandler<Netty
     }
 
     @Override
-    protected Object requestStart() {
-        httpServer.getInprogressRequestsGauge().inc();
-        httpServer.getTotalRequestCounter().inc();
-        return new Object[]{httpServer.getRequestLatencyHistogram().startTimer(), httpServer.getRequestLatencySummary().startTimer()};
+    protected Object requestStart(String method, String uri) {
+        httpServer.getInprogressRequestsGauge().labels(method, uri).inc();
+        httpServer.getTotalRequestCounter().labels(method, uri).inc();
+        return new Object[]{httpServer.getRequestLatencyHistogram().labels(method, uri).startTimer(),
+                httpServer.getRequestLatencySummary().labels(method, uri).startTimer()};
     }
 
     @Override
-    protected void requestEnd(Object object) {
-        httpServer.getInprogressRequestsGauge().dec();
+    protected void requestEnd(String method, String uri, int statusCode, Object object) {
+        httpServer.getInprogressRequestsGauge().labels(method, uri).dec();
         Object[] objects = (Object[]) object;
         ((Histogram.Timer) objects[0]).observeDuration();
         ((Summary.Timer) objects[1]).observeDuration();
+        httpServer.incrementHttpStatusCodeCounters(statusCode);
     }
 
     @Override
@@ -64,4 +66,6 @@ public class NettyHttpServerHandler extends AbstractNettyHttpServerHandler<Netty
     protected void responseSize(int size) {
         httpServer.getResponseSizeSummary().observe(size);
     }
+
+
 }

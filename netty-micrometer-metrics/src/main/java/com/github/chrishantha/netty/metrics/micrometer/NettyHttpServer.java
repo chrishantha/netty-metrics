@@ -17,27 +17,31 @@ package com.github.chrishantha.netty.metrics.micrometer;
 
 import com.github.chrishantha.netty.metrics.base.AbstractNettyHttpServer;
 import com.github.chrishantha.netty.metrics.base.args.ServerArgs;
-import com.sun.net.httpserver.HttpServer;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
+import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.binder.jvm.ClassLoaderMetrics;
+import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics;
+import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics;
+import io.micrometer.core.instrument.binder.jvm.JvmThreadMetrics;
+import io.micrometer.core.instrument.binder.system.FileDescriptorMetrics;
+import io.micrometer.core.instrument.binder.system.ProcessorMetrics;
+import io.micrometer.core.instrument.binder.system.UptimeMetrics;
 import io.micrometer.prometheus.PrometheusConfig;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
+import io.prometheus.client.exporter.HTTPServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.InetSocketAddress;
-import java.util.Collections;
 
 public class NettyHttpServer extends AbstractNettyHttpServer {
 
     private static final Logger logger = LoggerFactory.getLogger(NettyHttpServer.class);
 
     private static final short OFFSET = 1;
-
-    private static final PrometheusMeterRegistry registry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
 
     private Counter totalRequestCounter;
     private Timer requestLatencyTimer;
@@ -50,36 +54,37 @@ public class NettyHttpServer extends AbstractNettyHttpServer {
         serverArgs.setPort(serverArgs.getPort() + OFFSET);
         serverArgs.setMetricsPort(serverArgs.getMetricsPort() + OFFSET);
 
+        PrometheusMeterRegistry registry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
+        Metrics.globalRegistry.add(registry);
         totalRequestCounter = registry.counter("requests_total");
-        requestLatencyTimer = registry.timer("requests_latency");
-        sleepTimer = registry.timer("sleep_time");
+        Counter.builder("requests_total").register(registry);
+        requestLatencyTimer = Timer.builder("requests_latency").publishPercentiles(0.5, 0.75, 0.98, 0.99, 0.999)
+                .register(registry);
+        sleepTimer = Timer.builder("sleep_time").publishPercentiles(0.5, 0.75, 0.98, 0.99, 0.999)
+                .register(registry);
         requestSizeSummary = DistributionSummary
                 .builder("request_size")
-                .publishPercentileHistogram()
-                .baseUnit("bytes")
+                .tags()
                 .register(registry);
         responseSizeSummary = DistributionSummary
                 .builder("response_size")
+                .publishPercentileHistogram()
+                .publishPercentiles(0.5, 0.75, 0.98, 0.99, 0.999)
                 .baseUnit("bytes")
                 .register(registry);
 
-        //expose prometheus metrics
-        HttpServer server;
+        new ClassLoaderMetrics().bindTo(registry);
+        new JvmMemoryMetrics().bindTo(registry);
+        new JvmGcMetrics().bindTo(registry);
+        new ProcessorMetrics().bindTo(registry);
+        new JvmThreadMetrics().bindTo(registry);
+        new FileDescriptorMetrics().bindTo(registry);
+        new UptimeMetrics().bindTo(registry);
         try {
-            server = HttpServer.create(new InetSocketAddress(serverArgs.getMetricsPort()), 0);
+            new HTTPServer(new InetSocketAddress(serverArgs.getMetricsPort()), registry.getPrometheusRegistry(), true);
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }
-        server.createContext("/metrics", httpExchange -> {
-            logger.info("Request received for /metrics");
-            String response = registry.scrape();
-            httpExchange.getResponseHeaders().put("Content-Type", Collections.singletonList("text/plain; charset=UTF-8"));
-            httpExchange.sendResponseHeaders(200, response.length());
-            OutputStream os = httpExchange.getResponseBody();
-            os.write(response.getBytes());
-            os.close();
-        });
-        server.start();
     }
 
     public Counter getTotalRequestCounter() {

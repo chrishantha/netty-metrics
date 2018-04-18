@@ -22,6 +22,7 @@ import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
 import io.prometheus.client.Summary;
 import io.prometheus.client.exporter.HTTPServer;
+import io.prometheus.client.hotspot.DefaultExports;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +41,11 @@ public class NettyHttpServer extends AbstractNettyHttpServer {
     private Summary sleepTimeSummary;
     private Summary requestSizeSummary;
     private Summary responseSizeSummary;
+    private Counter http1XXCounter;
+    private Counter http2XXCounter;
+    private Counter http3XXCounter;
+    private Counter http4XXCounter;
+    private Counter http5XXCounter;
 
     @Override
     public void init(ServerArgs serverArgs) {
@@ -47,18 +53,18 @@ public class NettyHttpServer extends AbstractNettyHttpServer {
         serverArgs.setMetricsPort(serverArgs.getMetricsPort() + OFFSET);
 
         totalRequestCounter = Counter.build()
-                .name("requests_total").help("Requests total").register();
+                .name("requests_total").help("Requests total").labelNames("method", "uri").register();
         inprogressRequestsGauge = Gauge.build()
-                .name("inprogress_requests").help("Inprogress Requests").register();
+                .name("inprogress_requests").help("Inprogress Requests").labelNames("method", "uri").register();
         requestLatencyHistogram = Histogram.build()
                 .labelNames("method")
-                .name("requests_latency_seconds").help("Request latency in seconds.").register();
+                .name("requests_latency_seconds").help("Request latency in seconds.").labelNames("method", "uri").register();
         requestLatencySummary = Summary.build()
                 .quantile(0.1, 0.05)
                 .quantile(0.5, 0.05)
                 .quantile(0.9, 0.01)
                 .quantile(0.99, 0.001)
-                .name("requests_latency").help("Request latency").register();
+                .name("requests_latency").help("Request latency").labelNames("method", "uri").register();
         sleepTimeSummary = Summary.build()
                 .name("sleep_time").help("Sleep time").register();
         requestSizeSummary = Summary.build()
@@ -74,10 +80,32 @@ public class NettyHttpServer extends AbstractNettyHttpServer {
                 .quantile(0.99, 0.001)
                 .name("response_size").help("Response size").register();
 
+        http1XXCounter = Counter.build().name("http_1XX_requests_total").help("HTTP 1XX Status Codes").register();
+        http2XXCounter = Counter.build().name("http_2XX_requests_total").help("HTTP 2XX Status Codes").register();
+        http3XXCounter = Counter.build().name("http_3XX_requests_total").help("HTTP 3XX Status Codes").register();
+        http4XXCounter = Counter.build().name("http_4XX_requests_total").help("HTTP 4XX Status Codes").register();
+        http5XXCounter = Counter.build().name("http_5XX_requests_total").help("HTTP 5XX Status Codes").register();
+
+        DefaultExports.initialize();
+
         try {
             new HTTPServer(serverArgs.getMetricsPort(), true);
         } catch (IOException e) {
             throw new IllegalStateException(e);
+        }
+    }
+
+    void incrementHttpStatusCodeCounters(int statusCode) {
+        if (statusCode >= 100 && statusCode < 200) {
+            http1XXCounter.inc();
+        } else if (statusCode < 300) {
+            http2XXCounter.inc();
+        } else if (statusCode < 400) {
+            http3XXCounter.inc();
+        } else if (statusCode < 500) {
+            http4XXCounter.inc();
+        } else if (statusCode < 600) {
+            http5XXCounter.inc();
         }
     }
 
@@ -107,5 +135,13 @@ public class NettyHttpServer extends AbstractNettyHttpServer {
 
     public Summary getResponseSizeSummary() {
         return responseSizeSummary;
+    }
+
+
+    public static void main(String[] args) {
+        Counter totalRequestCounter = Counter.build()
+                .name("requests_total").help("Requests total").register();
+        totalRequestCounter.inc();
+        totalRequestCounter.collect().stream().forEach(s -> System.out.println(s.samples));
     }
 }
