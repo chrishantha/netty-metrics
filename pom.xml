@@ -281,7 +281,7 @@
         <log4j.version>2.11.0</log4j.version>
         <dropwizard.metrics.version>4.0.2</dropwizard.metrics.version>
         <prometheus.simple.client.version>0.4.0</prometheus.simple.client.version>
-        <micrometer.version>1.0.4</micrometer.version>
+        <micrometer.version>1.0.5</micrometer.version>
         <maven.compiler.plugin.version>3.7.0</maven.compiler.plugin.version>
         <maven.shade.plugin.version>3.1.1</maven.shade.plugin.version>
         <maven.dependency.plugin.version>3.0.2</maven.dependency.plugin.version>
